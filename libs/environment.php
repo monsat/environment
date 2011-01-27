@@ -7,7 +7,9 @@ class Environment {
 		'develop_domains' => array("www", "monsat"),
 		'production_domains' => array("www"),
 	);
-	
+
+	static $constant = 'ROOT';
+
 	static function initialize($settings = array()) {
 		self::$servers = array_merge(self::$servers, $settings);
 	}
@@ -40,7 +42,7 @@ class Environment {
 		$host = self::getHostName($host);
 		if (self::_isProductionServer($host)) {
 			$len = self::_strposServer($host) - 1;
-		} else if (self::_isDevelopServer($host)) {
+		} elseif (self::_isDevelopServer($host)) {
 			$len = self::_strposServer($host, false) - 1;
 		} else {
 			return false;
@@ -51,7 +53,11 @@ class Environment {
 	static function isSSL() {
 		return env('HTTPS');
 	}
-	function getHostName($host = ROOT) {
+	function getHostName($host = false) {
+		if (!$host) {
+			$host = constant(self::$constant);
+		}
+
 		return basename($host);
 	}
 	// Internal functions
