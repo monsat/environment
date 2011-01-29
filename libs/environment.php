@@ -53,6 +53,15 @@ class Environment {
 	static function isSSL() {
 		return env('HTTPS');
 	}
+
+	static function isCLI() {
+		return env('argc') > 1;
+	}
+
+	static function isWeb() {
+		return !self::isCLI();
+	}
+
 	function getHostName($host = false) {
 		if (!$host) {
 			$host = constant(self::$constant);

@@ -63,5 +63,23 @@ class EnvironmentTestCase extends CakeTestCase {
 		$this->assertIdentical(Environment::getEnvName(), 'monsat.test');
 	}
 
+	function testIsCLIAndIsWeb() {
+		$backup = $_ENV;
+
+		$_ENV['argc'] = 2;
+		$this->assertTrue(Environment::isCLI());
+		$this->assertFalse(Environment::isWeb());
+
+		$_ENV['argc'] = 1;
+		$this->assertFalse(Environment::isCLI());
+		$this->assertTrue(Environment::isWeb());
+
+		unset($_ENV['argc']);
+		$this->assertFalse(Environment::isCLI());
+		$this->assertTrue(Environment::isWeb());
+
+		$_ENV = $backup;
+	}
+
 }
 
