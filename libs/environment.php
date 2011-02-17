@@ -1,6 +1,7 @@
 <?php
 
 class Environment {
+
 	static $servers = array(
 		'develop_server' => "example.net",
 		'production_server' => "example.com",
@@ -13,6 +14,7 @@ class Environment {
 	static function initialize($settings = array()) {
 		self::$servers = array_merge(self::$servers, $settings);
 	}
+
 	// Return True if Production Environment
 	static function isProduction($host = false) {
 		$host = self::getHostName($host);
@@ -21,6 +23,7 @@ class Environment {
 		}
 		return false;
 	}
+
 	// Return True if Test Environment
 	static function isTest($host = false) {
 		$host = self::getHostName($host);
@@ -37,6 +40,7 @@ class Environment {
 		}
 		return false;
 	}
+
 	// Return Environment Name (subdomains)
 	static function getEnvName($host = false) {
 		$host = self::getHostName($host);
@@ -49,6 +53,7 @@ class Environment {
 		}
 		return substr($host, 0, $len);
 	}
+
 	// Return True if using ssl
 	static function isSSL() {
 		return env('HTTPS');
@@ -69,15 +74,23 @@ class Environment {
 
 		return basename($host);
 	}
+
+	function getServer($host = false) {
+		return self::isProduction($host) ? self::$servers['production_server'] : self::$servers['develop_server'];
+	}
+
 	// Internal functions
 	function _isProductionServer($host) {
 		return substr($host, self::_strposServer($host)) === self::$servers['production_server'];
 	}
+
 	function _isDevelopServer($host) {
 		return substr($host, self::_strposServer($host, false)) === self::$servers['develop_server'];
 	}
+
 	function _strposServer($host, $is_production = true) {
 		$srv = $is_production ? self::$servers['production_server'] : self::$servers['develop_server'];
-		return strlen($host) - strlen($srv);
+		return strpos($host, $srv);
 	}
+
 }
