@@ -33,7 +33,7 @@ class EnvironmentTestCase extends CakeTestCase {
 
 	public function testIsProduction() {
 		$this->assertIdentical(Environment::isProduction('/virtual/www.example.com'), true);
-		$this->assertIdentical(Environment::isProduction('/virtual/example.jp'), true);
+		$this->assertIdentical(Environment::isProduction('/virtual/example.com'), true);
 		$this->assertIdentical(Environment::isProduction('/virtual/monsat.example.com'), false);
 		$this->assertIdentical(Environment::isProduction('/virtual/www.example.jp'), false);
 	}
@@ -66,6 +66,28 @@ class EnvironmentTestCase extends CakeTestCase {
 		$this->assertIdentical(Environment::getServer('/virtual/www.example.jp'), 'example.jp');
 		$this->assertIdentical(Environment::getServer('/virtual/monsat.example.jp'), 'example.jp');
 		$this->assertIdentical(Environment::getServer('/virtual/dev.monsat.example.jp'), 'example.jp');
+	}
+
+	public function testError() {
+		$settings = array(
+			'develop_server' => 'example.com',
+			'production_server' => 'example.com',
+			'develop_domains' => array(''),
+			'production_domains' => array('www'),
+		);
+		Environment::initialize($settings);
+		try {
+			Environment::getServer('/virtual/www.example.com');
+			$this->fail('Expected Exception was not thrown');
+		} catch (Exception $e) {
+			$this->pass();
+		}
+		try {
+			Environment::getServer('/virtual/www.example.jp');
+			$this->fail('Expected Exception was not thrown');
+		} catch (Exception $e) {
+			$this->pass();
+		}
 	}
 
 	function testSettings() {
