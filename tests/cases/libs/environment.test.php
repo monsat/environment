@@ -15,8 +15,8 @@ class EnvironmentTestCase extends CakeTestCase {
 		Environment::initialize(array(
 			'develop_server' => "example.jp",
 			'production_server' => "example.com",
-			'develop_domains' => array("www", "monsat"),
-			'production_domains' => array("www"),
+			'develop_domains' => array("www", "monsat", ""),
+			'production_domains' => array("www", ""),
 		));
 		$this->_constant = Environment::$constant;
 	}
@@ -33,12 +33,14 @@ class EnvironmentTestCase extends CakeTestCase {
 
 	public function testIsProduction() {
 		$this->assertIdentical(Environment::isProduction('/virtual/www.example.com'), true);
+		$this->assertIdentical(Environment::isProduction('/virtual/example.jp'), true);
 		$this->assertIdentical(Environment::isProduction('/virtual/monsat.example.com'), false);
 		$this->assertIdentical(Environment::isProduction('/virtual/www.example.jp'), false);
 	}
 
 	public function testIsTest() {
 		$this->assertIdentical(Environment::isTest('/virtual/www.example.jp'), true);
+		$this->assertIdentical(Environment::isTest('/virtual/example.jp'), true);
 		$this->assertIdentical(Environment::isTest('/virtual/monsat.example.jp'), true);
 		$this->assertIdentical(Environment::isTest('/virtual/dev.monsat.example.jp'), false);
 		$this->assertIdentical(Environment::isTest('/virtual/www.example.com'), false);
@@ -54,6 +56,7 @@ class EnvironmentTestCase extends CakeTestCase {
 	public function testGetEnvName() {
 		$this->assertIdentical(Environment::getEnvName('/virtual/www.example.com'), 'www');
 		$this->assertIdentical(Environment::getEnvName('/virtual/www.example.jp'), 'www');
+		$this->assertIdentical(Environment::getEnvName('/virtual/example.jp'), '');
 		$this->assertIdentical(Environment::getEnvName('/virtual/monsat.example.jp'), 'monsat');
 		$this->assertIdentical(Environment::getEnvName('/virtual/dev.monsat.example.jp'), 'dev.monsat');
 	}
