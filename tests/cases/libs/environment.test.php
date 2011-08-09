@@ -121,7 +121,7 @@ class EnvironmentTestCase extends CakeTestCase {
 		}
 	}
 
-	function testSettings() {
+	public function testSettings() {
 		$settings = array(
 			'develop' => array(
 				'server' => 'dev.example.com',
@@ -154,7 +154,7 @@ class EnvironmentTestCase extends CakeTestCase {
 		$this->assertIdentical(Environment::getServer(), 'example.com');
 	}
 
-	function testIsCLIAndIsWeb() {
+	public function testIsCLIAndIsWeb() {
 		$backup = $_ENV;
 
 		$_ENV['argc'] = 2;

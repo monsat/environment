@@ -38,11 +38,12 @@ class Environment {
 	}
 
 	// Return True if Test Environment
-	static function isTest($host = false) {
+	public static function isTest($host = false) {
 		return self::_match($host, 'test');
 	}
+
 	// Return True if Develop Environment
-	static function isDevelop($host = false) {
+	public static function isDevelop($host = false) {
 		return self::_match($host, 'develop');
 	}
 
@@ -86,19 +87,19 @@ class Environment {
 	}
 
 	// Return True if using ssl
-	static function isSSL() {
+	public static function isSSL() {
 		return env('HTTPS');
 	}
 
-	static function isCLI() {
+	public static function isCLI() {
 		return env('argc') > 1;
 	}
 
-	static function isWeb() {
+	public static function isWeb() {
 		return !self::isCLI();
 	}
 
-	static function getHostName($host = false) {
+	public static function getHostName($host = false) {
 		if (!$host) {
 			$host = constant(self::$constant);
 		}
