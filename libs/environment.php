@@ -2,37 +2,80 @@
 
 class Environment {
 
-	static $servers = array(
-		'develop_server' => "example.net",
-		'production_server' => "example.com",
-		'develop_domains' => array("www", "monsat"),
-		'production_domains' => array("www"),
+	public static $settings = array(
+		'develop' => array(
+			'server' => 'dev.example.net',
+			'subdomains' => array(
+				'monsat',
+			),
+		),
+		'test' => array(
+			'server' => 'example.net',
+			'subdomains' => array(
+				'monsat',
+			),
+		),
+		'production' => array(
+			'server' => 'example.com',
+			'subdomains' => array(
+				null,
+				'www',
+			),
+		),
 	);
 
-	static $constant = 'ROOT';
+	public static $constant = 'ROOT';
+	protected static $_regexes = array();
 
-	static function initialize($settings = array()) {
-		self::$servers = array_merge(self::$servers, $settings);
+	public static function initialize($settings = array()) {
+		self::$settings = array_merge(self::$settings, $settings);
+		self::$_regexes = array();
 	}
 
 	// Return True if Production Environment
-	static function isProduction($host = false) {
-		return self::_isProductionServer(self::getHostName($host)) && in_array(self::getEnvName($host), self::$servers['production_domains']);
+	public static function isProduction($host = false) {
+		return self::_match($host, 'production');
 	}
 
 	// Return True if Test Environment
-	static function isTest($host = false) {
-		if (self::_isDevelopServer(self::getHostName($host)) && in_array(self::getEnvName($host), self::$servers['develop_domains'])) {
-			return true;
-		}
-		return false;
+	public static function isTest($host = false) {
+		return self::_match($host, 'test');
 	}
+
 	// Return True if Develop Environment
-	static function isDevelop($host = false) {
-		if (!self::isProduction($host) && !self::isTest($host)) {
-			return true;
+	public static function isDevelop($host = false) {
+		return self::_match($host, 'develop');
+	}
+
+	protected static function _match($host, $type) {
+		$host = self::getHostName($host);
+
+		if (!isset(self::$_regexes[$type])) {
+			extract(self::$settings[$type]);
+
+			$hasEmpty = false;
+			foreach ($subdomains as $i => $subdomain) {
+				if (empty($subdomain)) {
+					$hasEmpty = true;
+					unset($subdomains[$i]);
+				}
+			}
+			if (!empty($subdomains)) {
+				$subdomains = array_map('preg_quote', $subdomains, array_fill(0, count($subdomains), '/'));
+				$subdomainsRegex = sprintf("(%s)\\.", implode('|', $subdomains));
+				if ($hasEmpty) {
+					$subdomainsRegex = "($subdomainsRegex)?";
+				}
+			} else {
+				$subdomainsRegex = '';
+			}
+
+			$serverRegex = preg_quote($server, '/');
+			self::$_regexes[$type] = sprintf('/^%s%s$/', $subdomainsRegex, $serverRegex);
 		}
-		return false;
+
+		return !!preg_match(self::$_regexes[$type], $host);
+
 	}
 
 	// Return Environment Name (subdomains)
@@ -44,19 +87,19 @@ class Environment {
 	}
 
 	// Return True if using ssl
-	static function isSSL() {
+	public static function isSSL() {
 		return env('HTTPS');
 	}
 
-	static function isCLI() {
+	public static function isCLI() {
 		return env('argc') > 1;
 	}
 
-	static function isWeb() {
+	public static function isWeb() {
 		return !self::isCLI();
 	}
 
-	static function getHostName($host = false) {
+	public static function getHostName($host = false) {
 		if (!$host) {
 			$host = constant(self::$constant);
 		}
@@ -65,28 +108,28 @@ class Environment {
 	}
 
 	public static function getServer($host = false) {
-		return self::_determineServer($host) ? self::$servers['production_server'] : self::$servers['develop_server'];
+		$type = self::_determineServer($host);
+		return self::$settings[$type]['server'];
 	}
 
 	protected static function _determineServer($host) {
-		$host = self::getHostName($host);
-		if (self::_isProductionServer($host) && self::_isDevelopServer($host)) {
-			throw new Exception('The host names for production server and develop server are ambiguous.');
-		} elseif (self::_isProductionServer($host)) {
-			return true;
-		} elseif (self::_isDevelopServer($host)) {
-			return false;
+
+		$results = array(
+			'production' => (int)self::isProduction($host),
+			'test' => (int)self::isTest($host),
+			'develop' => (int)self::isDevelop($host),
+		);
+
+		$counts = array_count_values($results);
+		if (!isset($counts[1])) {
+			throw new Exception('No server can be detected. check your directory name.');
+		} elseif ($counts[1] == 1) {
+			return array_search(1, $results);
 		}
 
-		throw new Exception('No server can be detected. check your directory name.');
-	}
+		$results = array_filter($results);
+		throw new Exception(sprintf('The host names for %s server are ambiguous.', implode(', ', array_keys($results))));
 
-	protected static function _isProductionServer($host) {
-		return !!preg_match(sprintf('/%s$/', preg_quote(self::$servers['production_server'], '/')), $host);
-	}
-
-	protected static function _isDevelopServer($host) {
-		return !!preg_match(sprintf('/%s$/', preg_quote(self::$servers['develop_server'], '/')), $host);
 	}
 
 }
