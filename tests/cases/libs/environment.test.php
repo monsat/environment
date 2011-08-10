@@ -1,28 +1,44 @@
 <?php
 
 App::import('Lib', 'Environment.Environment');
-Environment::initialize(array(
-	'develop_server' => 'example.jp',
-));
 
 class EnvironmentTestCase extends CakeTestCase {
 
-	protected $_servers;
+	protected $_settings;
 	protected $_constant;
 
 	public function startTest() {
-		$this->_server = Environment::$servers;
+		$this->_settings = Environment::$settings;
 		Environment::initialize(array(
-			'develop_server' => "example.jp",
-			'production_server' => "example.com",
-			'develop_domains' => array("www", "monsat", ""),
-			'production_domains' => array("www", ""),
+			'develop' => array(
+				'server' => 'dev.example.jp',
+				'subdomains' => array(
+					'www',
+					'monsat',
+					'',
+				),
+			),
+			'test' => array(
+				'server' => 'example.jp',
+				'subdomains' => array(
+					'www',
+					'monsat',
+					'',
+				),
+			),
+			'production' => array(
+				'server' => 'example.com',
+				'subdomains' => array(
+					'www',
+					'',
+				),
+			),
 		));
 		$this->_constant = Environment::$constant;
 	}
 
 	public function endTest() {
-		Environment::$servers = $this->_server;
+		Environment::$settings = $this->_settings;
 		Environment::$constant = $this->_constant;
 	}
 
@@ -47,10 +63,10 @@ class EnvironmentTestCase extends CakeTestCase {
 	}
 
 	public function testIsDevelop() {
-		$this->assertIdentical(Environment::isDevelop('/virtual/dev.monsat.example.jp'), true);
+		$this->assertIdentical(Environment::isDevelop('/virtual/monsat.dev.example.jp'), true);
 		$this->assertIdentical(Environment::isDevelop('/virtual/monsat.example.jp'), false);
 		$this->assertIdentical(Environment::isDevelop('/virtual/www.example.jp'), false);
-		$this->assertIdentical(Environment::isDevelop('/virtual/dev.monsat.example.com'), true);
+		$this->assertIdentical(Environment::isDevelop('/virtual/dev.example.jp'), true);
 	}
 
 	public function testGetEnvName() {
@@ -58,57 +74,87 @@ class EnvironmentTestCase extends CakeTestCase {
 		$this->assertIdentical(Environment::getEnvName('/virtual/www.example.jp'), 'www');
 		$this->assertIdentical(Environment::getEnvName('/virtual/example.jp'), '');
 		$this->assertIdentical(Environment::getEnvName('/virtual/monsat.example.jp'), 'monsat');
-		$this->assertIdentical(Environment::getEnvName('/virtual/dev.monsat.example.jp'), 'dev.monsat');
+		$this->assertIdentical(Environment::getEnvName('/virtual/monsat.dev.example.jp'), 'monsat');
 	}
 
 	public function testGetServer() {
 		$this->assertIdentical(Environment::getServer('/virtual/www.example.com'), 'example.com');
 		$this->assertIdentical(Environment::getServer('/virtual/www.example.jp'), 'example.jp');
 		$this->assertIdentical(Environment::getServer('/virtual/monsat.example.jp'), 'example.jp');
-		$this->assertIdentical(Environment::getServer('/virtual/dev.monsat.example.jp'), 'example.jp');
+		$this->assertIdentical(Environment::getServer('/virtual/monsat.dev.example.jp'), 'dev.example.jp');
 	}
 
 	public function testError() {
 		$settings = array(
-			'develop_server' => 'example.com',
-			'production_server' => 'example.com',
-			'develop_domains' => array(''),
-			'production_domains' => array('www'),
+			'develop' => array(
+				'server' => 'example.com',
+				'subdomains' => array(
+					'www',
+				),
+			),
+			'test' => array(
+				'server' => 'example.com',
+				'subdomains' => array(
+					null,
+				),
+			),
+			'production' => array(
+				'server' => 'example.com',
+				'subdomains' => array(
+					'www',
+					null,
+				),
+			),
 		);
 		Environment::initialize($settings);
 		try {
 			Environment::getServer('/virtual/www.example.com');
-			$this->fail('Expected Exception was not thrown');
+			$this->fail('ambiguous');
 		} catch (Exception $e) {
-			$this->pass();
+			$this->pass('ambiguous');
 		}
 		try {
 			Environment::getServer('/virtual/www.example.jp');
-			$this->fail('Expected Exception was not thrown');
+			$this->fail('not detected');
 		} catch (Exception $e) {
-			$this->pass();
+			$this->pass('not detected');
 		}
 	}
 
-	function testSettings() {
+	public function testSettings() {
 		$settings = array(
-			'develop_server' => 'example.com',
-			'production_server' => 'example.jp',
-			'develop_domains' => array('monsat.test'),
-			'production_domains' => array('www'),
+			'develop' => array(
+				'server' => 'dev.example.com',
+				'subdomains' => array(
+					'monsat.test',
+				),
+			),
+			'test' => array(
+				'server' => 'example.com',
+				'subdomains' => array(
+					'monsat.test',
+				),
+			),
+			'production' => array(
+				'server' => 'example.jp',
+				'subdomains' => array(
+					'www',
+				),
+			),
 		);
 		Environment::initialize($settings);
 
-		$this->assertEqual(Environment::$servers, $settings);
+		$this->assertEqual(Environment::$settings, $settings);
 
 		define('TEST_CONSTANT_FOR_ENVIRONMENT', 'monsat.test.example.com');
 		Environment::$constant = 'TEST_CONSTANT_FOR_ENVIRONMENT';
 
+		$this->assertIdentical(Environment::isTest(), true);
 		$this->assertIdentical(Environment::getEnvName(), 'monsat.test');
 		$this->assertIdentical(Environment::getServer(), 'example.com');
 	}
 
-	function testIsCLIAndIsWeb() {
+	public function testIsCLIAndIsWeb() {
 		$backup = $_ENV;
 
 		$_ENV['argc'] = 2;
