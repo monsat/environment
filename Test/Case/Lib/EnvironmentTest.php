@@ -61,6 +61,21 @@ class EnvironmentTest extends CakeTestCase {
 		$this->assertFalse(Environment::is('Develop', '/virtual/monsat.example.jp'));
 	}
 
+    /**
+     * @expectedException BadMethodCallException
+     */
+	public function testCallStatic() {
+		$result = Environment::isProduction('/virtual/www.example.com');
+		$this->assertTrue($result);
+
+		Environment::$envs['production'] = Environment::$envs['Production'];
+		unset(Environment::$envs['Production']);
+		$result = Environment::isProduction('/virtual/www.example.com');
+		$this->assertTrue($result);
+
+		Environment::isNotDefinedEnvName();
+	}
+
 	public function testEnvs() {
 		$envs = array(
 			'Production' => array(

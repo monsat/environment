@@ -14,6 +14,21 @@ class Environment {
 		self::$envs = $envs;
 	}
 
+	public static function __callStatic($method, $arguments) {
+		if (preg_match('/^is(.+)$/', $method, $matches)) {
+			$env = $matches[1];
+			if (!isset(self::$envs[$env])) {
+				$env = strtolower($env{0} . substr($env, 1));
+				if (!isset(self::$envs[$env])) {
+					throw new BadMethodCallException("The $env is not defined for Environment");
+				}
+			}
+			array_unshift($arguments, $env);
+			return call_user_func_array(__CLASS__ . '::is', $arguments);
+		}
+		throw new Exception('Called undefined class method ' . __CLASS__ . "::$method()");
+	}
+
 	// Return True if Current Environment
 	public static function is($envKey = '', $host = false) {
 		$host = self::getHostName($host);
@@ -40,17 +55,6 @@ class Environment {
 		}
 
 		return basename($host);
-	}
-
-	// deprecated (old version methods)
-	public function isProduction($host = false) {
-		return self::is('production', $host) || self::is('Production', $host);
-	}
-	public function isTest($host = false) {
-		return self::is('test', $host) || self::is('Test', $host);
-	}
-	public function isDevelop($host = false) {
-		return self::is('develop', $host) || self::is('Develop', $host);
 	}
 
 }
